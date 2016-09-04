@@ -1,0 +1,23 @@
+Date amount=Num{$} {tx* gift loan owed} dir={send/-> recv/<- earn/<~} to/from=Sym for=Str?
+
+(2009-08-14) $3         -> "Pirate O's" | Sangria Señorial
+(2009-08-19) $8         -> :diner       | Omelette & grapefruit juice
+(2009-08-22) $12        -> :diner       | Chickpea burger
+(2009-08-26) $150  owed -> :bloodcastle | Teeth cleaning
+(2010-07-10) $170       -> :store       | Water filtration system
+(2010-07-10) $4.23      -> :store       | 1.02 lb of black forest ham
+(2010-07-10) $6.37      -> :store       | 1.42 lb of havarti
+(2010-07-10) $1.29      -> :store       | Baguette
+(2010-07-10) $3.29      -> :store       | Sunflower seed bread
+(2010-07-10) $1.45      -> :store       | Four plums
+(2010-07-10) $1.39      -> :store       | Tupperware-like container ("POLYBOX")
+(2010-07-10) $1.09      -> :store       | Two cans, garbanzo beans
+(2010-07-10) $0.79      -> :store       | Two cloves garlic (on sale)
+(2010-07-10) $3.99      -> :store       | One bread tin
+(2010-07-10) $1.89      -> :store       | Three cucumbers
+(2010-07-10) $2.12      -> :store       | Sales tax for the above (8.2%)
+(2010-07-12) $200  loan <- 'Paul Allen' | ???
+(2012-12-13) $12        <~ :heddy       | Sold a story idea
+(2013-04-12) $50        -> :carmichael  | Conceptual advertisement
+(2013-04-19) $400  gift <- :anonymous   | Cashing in on my fame
+(2013-04-19) $400  gift -> :anonymous   | Gave it all back

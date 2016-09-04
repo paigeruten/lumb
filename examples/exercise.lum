@@ -1,0 +1,8 @@
+Date {walk hike jog bike} dur=Num{min hr=60} dist=Num{km} @ loc=Str! notes=Str?
+
+(2016-08-28) jog 30min 4km
+(2016-08-29) hike 2hr 7km @ :lake
+(2016-08-30) bike 30min 4km
+  Biked to/from work today.
+(2016-08-31) walk 1hr 4km
+  Bike broke down so walked to/from work today.

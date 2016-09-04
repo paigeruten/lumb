@@ -1,0 +1,11 @@
+Date {install uninstall} pkg(s)=[Sym] notes=Str?
+
+(2016-08-27) install :alsa-utils
+  Provides amixer/alsamixer, needed to unmute the channels and get sound
+  working.
+(2016-08-28) install :mlocate
+  The `locate` command.
+(2016-08-29) install :mpv
+  Audio/video player.
+(2016-08-29) install :socat
+  Dependency for ~/bin/mpvctl.

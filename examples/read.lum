@@ -1,0 +1,5 @@
+dur=Num{min hr=60}? {book article comic} title=Str pg(s)=Num? chap(s)=[Num] url=Str?
+
+(2016-08-30) 45min book 'Operating Systems: Three Easy Pieces' pgs=26 chap=5
+(2016-08-31) 1.5hr book 'Introduction to Algorithms' pgs=40 chap=13
+(2016-09-01) 10min article 'My Favorite Erlang Program' url='http://joearms.github.io/2013/11/21/My-favorite-erlang-program.html'
