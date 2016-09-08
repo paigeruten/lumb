@@ -6,12 +6,11 @@ fn is_identifier_char(c: u8) -> bool {
     is_lowercase(c) || is_digit(c) || c == b'-' || c == b'_'
 }
 
-fn identifier<I: U8Input>(i: I) -> SimpleResult<I, (I::Token, I::Buffer)> {
-    parse!{i;
-        let first = satisfy(is_lowercase);
-        let rest  = take_while(is_identifier_char);
-        ret (first, rest)
-    }
+fn identifier<I: U8Input>(i: I) -> SimpleResult<I, I::Buffer> {
+    matched_by(i, parser!{
+        satisfy(is_lowercase);
+        skip_while(is_identifier_char)
+    }).map(|(b, _)| b)
 }
 
 fn number<I: U8Input>(i: I) -> SimpleResult<I, i32> {
@@ -20,18 +19,17 @@ fn number<I: U8Input>(i: I) -> SimpleResult<I, i32> {
     }
 }
 
-fn typename<I: U8Input>(i: I) -> SimpleResult<I, (I::Token, I::Buffer)> {
-    parse!{i;
-        let first = satisfy(is_uppercase);
-        let rest  = take_while(is_lowercase);
-        ret (first, rest)
-    }
+fn typename<I: U8Input>(i: I) -> SimpleResult<I, I::Buffer> {
+    matched_by(i, parser!{
+        satisfy(is_uppercase);
+        skip_while(is_lowercase)
+    }).map(|(b, _)| b)
 }
 
 fn entry_item<I: U8Input>(i: I) -> SimpleResult<I, (I::Buffer, i32)> {
     parse!{i;
-        let (field, _) = matched_by(identifier);
-                         token(b'=');
+        let field = identifier();
+                    token(b'=');
         let value = number();
         ret (field, value)
     }
@@ -39,9 +37,9 @@ fn entry_item<I: U8Input>(i: I) -> SimpleResult<I, (I::Buffer, i32)> {
 
 fn struct_item<I: U8Input>(i: I) -> SimpleResult<I, (I::Buffer, I::Buffer)> {
     parse!{i;
-        let (field, _) = matched_by(identifier);
-                         token(b'=');
-        let (typ, _)   = matched_by(typename);
+        let field = identifier();
+                    token(b'=');
+        let typ   = typename();
         ret (field, typ)
     }
 }
@@ -85,10 +83,10 @@ mod tests {
 
     #[test]
     fn test_identifier() {
-        assert_eq!(parse_only(identifier, b"date0-xyz "), Ok((b'd', &b"ate0-xyz"[..])));
-        assert_eq!(parse_only(identifier, b"a."), Ok((b'a', &b""[..])));
-        assert_eq!(parse_only(identifier, b"abc-_-_."), Ok((b'a', &b"bc-_-_"[..])));
-        assert_eq!(parse_only(identifier, b"asdF"), Ok((b'a', &b"sd"[..])));
+        assert_eq!(parse_only(identifier, b"date0-xyz "), Ok(&b"date0-xyz"[..]));
+        assert_eq!(parse_only(identifier, b"a."), Ok(&b"a"[..]));
+        assert_eq!(parse_only(identifier, b"abc-_-_."), Ok(&b"abc-_-_"[..]));
+        assert_eq!(parse_only(identifier, b"asdF"), Ok(&b"asd"[..]));
         assert!(parse_only(identifier, b"Asdf").is_err());
         assert!(parse_only(identifier, b"_asdf").is_err());
     }
@@ -103,9 +101,9 @@ mod tests {
 
     #[test]
     fn test_type() {
-        assert_eq!(parse_only(typename, b"Num"), Ok((b'N', &b"um"[..])));
-        assert_eq!(parse_only(typename, b"Str"), Ok((b'S', &b"tr"[..])));
-        assert_eq!(parse_only(typename, b"FixNum"), Ok((b'F', &b"ix"[..])));
+        assert_eq!(parse_only(typename, b"Num"), Ok(&b"Num"[..]));
+        assert_eq!(parse_only(typename, b"Str"), Ok(&b"Str"[..]));
+        assert_eq!(parse_only(typename, b"FixNum"), Ok(&b"Fix"[..]));
         assert!(parse_only(typename, b"asdf").is_err());
     }
 
