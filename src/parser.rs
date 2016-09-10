@@ -3,31 +3,36 @@ use chomp::parsers::skip_while1; // not currently in prelude
 use chomp::ascii::*;
 
 #[derive(PartialEq, Debug)]
-struct LogFile<B> {
+pub struct LogFile<B> {
     log_struct: LogStruct<B>,
     log_entries: Vec<LogEntry<B>>,
+    ws: (B, B, B),
 }
 
 #[derive(PartialEq, Debug)]
-struct LogStruct<B> {
+pub struct LogStruct<B> {
     struct_items: Vec<StructItem<B>>,
+    newlines: B,
 }
 
 #[derive(PartialEq, Debug)]
-struct LogEntry<B> {
+pub struct LogEntry<B> {
     entry_items: Vec<EntryItem<B>>,
+    newlines: B,
 }
 
 #[derive(PartialEq, Debug)]
-struct StructItem<B> {
+pub struct StructItem<B> {
     field: B,
     typename: B,
+    ws: B,
 }
 
 #[derive(PartialEq, Debug)]
-struct EntryItem<B> {
+pub struct EntryItem<B> {
     field: B,
-    value: i32,
+    value: B,
+    ws: B,
 }
 
 fn is_identifier_char(c: u8) -> bool {
@@ -41,10 +46,11 @@ fn identifier<I: U8Input>(i: I) -> SimpleResult<I, I::Buffer> {
     }).map(|(b, _)| b)
 }
 
-fn number<I: U8Input>(i: I) -> SimpleResult<I, i32> {
-    parse!{i;
-        signed(decimal)
-    }
+fn number<I: U8Input>(i: I) -> SimpleResult<I, I::Buffer> {
+    matched_by(i, parser!{
+        option(|i| satisfy(i, |c| c == b'+' || c == b'-'), b'+');
+        skip_while1(is_digit)
+    }).map(|(b, _)| b)
 }
 
 fn typename<I: U8Input>(i: I) -> SimpleResult<I, I::Buffer> {
@@ -54,13 +60,25 @@ fn typename<I: U8Input>(i: I) -> SimpleResult<I, I::Buffer> {
     }).map(|(b, _)| b)
 }
 
+fn whitespace_or_peek_newline<I: U8Input>(i: I) -> SimpleResult<I, I::Buffer> {
+    parse!{i;
+        let space = peek_next();
+        i -> if is_end_of_line(space) {
+            parse!{i; take(0) }
+        } else {
+            parse!{i; take_while1(is_horizontal_space) }
+        }
+    }
+}
+
 fn entry_item<I: U8Input>(i: I) -> SimpleResult<I, EntryItem<I::Buffer>> {
     parse!{i;
         let field = identifier();
                     token(b'=');
         let value = number();
+        let ws    = whitespace_or_peek_newline();
 
-        ret EntryItem { field: field, value: value }
+        ret EntryItem { field: field, value: value, ws: ws }
     }
 }
 
@@ -69,41 +87,40 @@ fn struct_item<I: U8Input>(i: I) -> SimpleResult<I, StructItem<I::Buffer>> {
         let field = identifier();
                     token(b'=');
         let typ   = typename();
+        let ws    = whitespace_or_peek_newline();
 
-        ret StructItem { field: field, typename: typ }
+        ret StructItem { field: field, typename: typ, ws: ws }
     }
 }
 
 fn log_entry<I: U8Input>(i: I) -> SimpleResult<I, LogEntry<I::Buffer>> {
     parse!{i;
-        let items = sep_by1(entry_item, parser!{ skip_while1(is_horizontal_space) });
-                    skip_while(is_horizontal_space);
-                    skip_while1(is_end_of_line);
+        let items    = many1(entry_item);
+        let newlines = take_while1(is_end_of_line);
 
-        ret LogEntry { entry_items: items }
+        ret LogEntry { entry_items: items, newlines: newlines }
     }
 }
 
 fn log_struct<I: U8Input>(i: I) -> SimpleResult<I, LogStruct<I::Buffer>> {
     parse!{i;
-        let items = sep_by1(struct_item, parser!{ skip_while1(is_horizontal_space) });
-                    skip_while(is_horizontal_space);
-                    skip_while1(is_end_of_line);
+        let items    = many1(struct_item);
+        let newlines = take_while1(is_end_of_line);
 
-        ret LogStruct { struct_items: items }
+        ret LogStruct { struct_items: items, newlines: newlines }
     }
 }
 
 fn log_file<I: U8Input>(i: I) -> SimpleResult<I, LogFile<I::Buffer>> {
     parse!{i;
-                      skip_while(is_whitespace);
+        let ws1     = take_while(is_whitespace);
         let strukt  = log_struct();
-                      skip_while(is_whitespace);
+        let ws2     = take_while(is_whitespace);
         let entries = many(log_entry);
-                      skip_while(is_whitespace);
+        let ws3     = take_while(is_whitespace);
                       eof();
 
-        ret LogFile { log_struct: strukt, log_entries: entries }
+        ret LogFile { log_struct: strukt, log_entries: entries, ws: (ws1, ws2, ws3) }
     }
 }
 
@@ -127,10 +144,10 @@ mod tests {
 
     #[test]
     fn test_number() {
-        assert_eq!(parse_only(number, b"123"), Ok(123));
-        assert_eq!(parse_only(number, b"+123"), Ok(123));
-        assert_eq!(parse_only(number, b"-123"), Ok(-123));
-        assert_eq!(parse_only(number, b"1234567890"), Ok(1234567890));
+        assert_eq!(parse_only(number, b"123"), Ok(&b"123"[..]));
+        assert_eq!(parse_only(number, b"+123"), Ok(&b"+123"[..]));
+        assert_eq!(parse_only(number, b"-123"), Ok(&b"-123"[..]));
+        assert_eq!(parse_only(number, b"1234567890"), Ok(&b"1234567890"[..]));
     }
 
     #[test]
@@ -143,14 +160,14 @@ mod tests {
 
     #[test]
     fn test_entry_item() {
-        assert_eq!(parse_only(entry_item, b"chapter=12"),
-                   Ok(EntryItem { field: &b"chapter"[..], value: 12 }));
+        assert_eq!(parse_only(entry_item, b"chapter=12 "),
+                   Ok(EntryItem { field: &b"chapter"[..], value: &b"12"[..], ws: &b" "[..] }));
     }
 
     #[test]
     fn test_struct_item() {
-        assert_eq!(parse_only(struct_item, b"chapter=Num"),
-                   Ok(StructItem { field: &b"chapter"[..], typename: &b"Num"[..] }));
+        assert_eq!(parse_only(struct_item, b"chapter=Num\t"),
+                   Ok(StructItem { field: &b"chapter"[..], typename: &b"Num"[..], ws: &b"\t"[..] }));
     }
 
     #[test]
@@ -158,9 +175,10 @@ mod tests {
         assert_eq!(parse_only(log_entry, b"abc=123  xyz=-42 a_b_c-1=0   \n\n\nasdf"),
                    Ok(LogEntry {
                        entry_items: vec![
-                           EntryItem { field: &b"abc"[..], value: 123 },
-                           EntryItem { field: &b"xyz"[..], value: -42 },
-                           EntryItem { field: &b"a_b_c-1"[..], value: 0 }]}));
+                           EntryItem { field: &b"abc"[..], value: &b"123"[..], ws: &b"  "[..] },
+                           EntryItem { field: &b"xyz"[..], value: &b"-42"[..], ws: &b" "[..] },
+                           EntryItem { field: &b"a_b_c-1"[..], value: &b"0"[..], ws: &b"   "[..] }],
+                       newlines: &b"\n\n\n"[..] }));
     }
 
     #[test]
@@ -168,28 +186,37 @@ mod tests {
         assert_eq!(parse_only(log_struct, b"abc=Num  xyz=Str a_b_c-1=Bool  \n\n\nasdf"),
                    Ok(LogStruct {
                        struct_items: vec![
-                           StructItem { field: &b"abc"[..], typename: &b"Num"[..] },
-                           StructItem { field: &b"xyz"[..], typename: &b"Str"[..] },
-                           StructItem { field: &b"a_b_c-1"[..], typename: &b"Bool"[..] }]}));
+                           StructItem { field: &b"abc"[..], typename: &b"Num"[..], ws: &b"  "[..] },
+                           StructItem { field: &b"xyz"[..], typename: &b"Str"[..], ws: &b" "[..] },
+                           StructItem { field: &b"a_b_c-1"[..], typename: &b"Bool"[..], ws: &b"  "[..] }],
+                       newlines: &b"\n\n\n"[..] }));
     }
 
     #[test]
     fn test_log_file() {
-        assert_eq!(parse_only(log_file, b"abc=Num xyz=Num\n\nabc=1 xyz=2\nabc=3 xyz=4\n"),
+        assert_eq!(parse_only(log_file, b"  \nabc=Num xyz=Num\n\n \n abc=1 xyz=2\nabc=3 xyz=4\n\n \n"),
                    Ok(LogFile {
                        log_struct: LogStruct {
                            struct_items: vec![
-                               StructItem { field: &b"abc"[..], typename: &b"Num"[..] },
-                               StructItem { field: &b"xyz"[..], typename: &b"Num"[..] }]},
+                               StructItem { field: &b"abc"[..], typename: &b"Num"[..], ws: &b" "[..] },
+                               StructItem { field: &b"xyz"[..], typename: &b"Num"[..], ws: &b""[..] }],
+                           newlines: &b"\n\n"[..]
+                       },
                        log_entries: vec![
                            LogEntry {
                                entry_items: vec![
-                                   EntryItem { field: &b"abc"[..], value: 1 },
-                                   EntryItem { field: &b"xyz"[..], value: 2 }]},
+                                   EntryItem { field: &b"abc"[..], value: &b"1"[..], ws: &b" "[..] },
+                                   EntryItem { field: &b"xyz"[..], value: &b"2"[..], ws: &b""[..] }],
+                               newlines: &b"\n"[..]
+                           },
                            LogEntry {
                                entry_items: vec![
-                                   EntryItem { field: &b"abc"[..], value: 3 },
-                                   EntryItem { field: &b"xyz"[..], value: 4 }]}]}));
+                                   EntryItem { field: &b"abc"[..], value: &b"3"[..], ws: &b" "[..] },
+                                   EntryItem { field: &b"xyz"[..], value: &b"4"[..], ws: &b""[..] }],
+                               newlines: &b"\n\n"[..]
+                           }],
+                       ws: (&b"  \n"[..], &b" \n "[..], &b" \n"[..])
+                       }));
     }
 
     #[test]
