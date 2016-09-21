@@ -1,7 +1,0 @@
-[package]
-name = "lumb"
-version = "0.1.0"
-authors = ["Jeremy Ruten <jeremy.ruten@gmail.com>"]
-
-[dependencies]
-chomp = { git = "https://github.com/m4rw3r/chomp.git" }
