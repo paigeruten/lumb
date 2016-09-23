@@ -1,6 +1,0 @@
-#!/usr/bin/env ruby
-
-require 'lumb'
-
-print Lumb.parse(File.read(ARGV.first)).to_s
-

@@ -18,7 +18,7 @@ highlight link lumbOperator Operator
 syntax region lumbString oneline start=/\v"/ skip=/\v\\./ end=/\v"/
 syntax region lumbString oneline start=/\v'/ skip=/\v\\./ end=/\v'/
 syntax match lumbString "\v\|.*$"
-syntax match lumbSymbol "\v:[a-z][a-z0-9\-_]*"
+syntax match lumbSymbol "\v:\S+"
 highlight link lumbString String
 highlight link lumbSymbol String
 
