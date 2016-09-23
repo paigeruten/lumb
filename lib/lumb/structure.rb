@@ -11,13 +11,29 @@ module Lumb
       end
     end
 
+    def num_slots
+      @items.length
+    end
+
     def slot_index(name)
       @slots[name.to_sym]
+    end
+
+    def slot_name(index)
+      @items[index].slot
     end
 
     def slot_type(name_or_index)
       name_or_index = slot_index(name_or_index) unless name_or_index.is_a? Fixnum
       @items[name_or_index].type
+    end
+
+    def to_a
+      @items.map { |item| [item.slot, item.type] }
+    end
+
+    def to_h
+      to_a.to_h
     end
   end
 

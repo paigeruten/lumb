@@ -13,10 +13,10 @@ the number of pages you read that day.
 ```lum
 date=Date author=Sym chapter=Num pages=Num
 
-date=2016-08-28 author=:vonnegut chapter=1 pages=22
-date=2016-08-29 author=:vonnegut chapter=2 pages=10
-date=2016-08-30 author=:vonnegut chapter=2 pages=0
-date=2016-08-31 author=:vonnegut chapter=4 pages=45
+2016-08-28 :vonnegut chapter=1 pages=22
+2016-08-29 :vonnegut chapter=2 pages=10
+2016-08-30 :vonnegut chapter=2 pages=0
+2016-08-31 :vonnegut chapter=4 pages=45
 ```
 
 ## File
@@ -50,6 +50,9 @@ separated by whitespace.
 An entry item is an [identifier](#identifiers) (the slot name), followed by an
 `=` char, followed by a [value](#types).
 
+An entry item may [elide](#elision) the slot name, so that it consists only of
+a [value](#types).
+
 ## Identifiers
 
 Identifiers are strings matching the regex `[a-z][a-zA-Z0-9_\-]`.
@@ -70,11 +73,16 @@ Example values: `0`, `1`, `+42`, `-50`, `1000009`.
 
 A symbol is a `:` char followed by one or more non-whitespace characters.
 
-Example values: `:foo`, `:abc123`, `:hello?`, `:[]`, `:!@#$%^&*()`, `:::`
+Example values: `:foo`, `:abc123`, `:hello?`, `:[]`, `:!@#$%^&*()`, `:::`.
 
 ### Date
 
 A date consists of a year, month, and day in the `YYYY-MM-DD` format.
 
-Example values: `2016-09-23`, `1970-01-01`
+Example values: `2016-09-23`, `1970-01-01`.
+
+## Elision
+
+Slot names may be elided in entries. In this case, the value is assigned to the
+leftmost slot that hasn't been assigned a value yet.
 

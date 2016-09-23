@@ -31,9 +31,7 @@ module Lumb
     }
 
     rule(:entry_item) {
-      slot.as(:slot)      >>
-      str('=')            >>
-      value.as(:value)    >>
+      ((slot.as(:slot) >> str('=') >> value.as(:value)) | value.as(:value)) >>
       delim_space.as(:ws)
     }
 
@@ -73,6 +71,9 @@ module Lumb
     }
     rule(:slot => simple(:slot), :value => simple(:value), :ws => simple(:ws)) {
       EntryItem.new(slot, value, ws)
+    }
+    rule(:value => simple(:value), :ws => simple(:ws)) {
+      EntryItem.new(nil, value, ws)
     }
     rule(:items => sequence(:items), :ws => simple(:ws)) { |dict|
       items, ws = dict[:items], dict[:ws]
